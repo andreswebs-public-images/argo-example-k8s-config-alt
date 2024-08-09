@@ -1,19 +1,16 @@
 ---
 applicationName: mu
-
 deployment:
   enabled: true
   image:
     repository: public.ecr.aws/andreswebs/argo-example/mu
-    tag: latest
+    tag: dc8570b19881fa27bd11c9cf55cf8fa380f042d9
     pullPolicy: Always
-
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 25%
       maxUnavailable: 25%
-
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -31,12 +28,10 @@ deployment:
     requests:
       memory: 256Mi
       cpu: 256m
-
   ports:
     - containerPort: 80
       name: http
       protocol: TCP
-
 service:
   enabled: true
   ports:
