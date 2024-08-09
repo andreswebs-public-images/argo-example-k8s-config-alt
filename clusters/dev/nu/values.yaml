@@ -1,5 +1,6 @@
 ---
-applicationName: tu
+applicationName: nu
+
 deployment:
   enabled: true
   image:
