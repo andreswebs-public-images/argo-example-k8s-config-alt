@@ -1,0 +1,124 @@
+---
+name: Pull Request
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        clusters:
+          - dev
+        charts:
+          - mu
+          - nu
+          - tu
+
+    env:
+      CLUSTER: ${{ matrix.clusters }}
+      CHART_NAME: ${{ matrix.charts }}
+      APP_PATH: ./clusters/${{ matrix.clusters }}/${{ matrix.charts }}
+      APP_ID: ${{ matrix.charts }}.${{ matrix.clusters }}
+      SOURCE_YAML: ${{ matrix.charts }}.${{ matrix.clusters }}.source.yaml
+      SOURCE_ARTIFACT: ${{ matrix.charts }}-${{ matrix.clusters }}-source
+      TARGET_YAML: ${{ matrix.charts }}.${{ matrix.clusters }}.target.yaml
+      TARGET_ARTIFACT: ${{ matrix.charts }}-${{ matrix.clusters }}-target
+
+      K8S_SCHEMAS_EXTERNAL_SECRET: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/external-secrets.io/externalsecret_v1beta1.json
+
+    steps:
+      - name: Environment
+        env:
+          APP_PATH: ${{ env.APP_PATH }}
+          APP_ID: ${{ env.APP_ID }}
+          SOURCE_YAML: ${{ env.SOURCE_YAML }}
+          TARGET_YAML: ${{ env.TARGET_YAML }}
+        run: |
+          echo "APP_PATH=${APP_PATH}" >> $GITHUB_ENV
+          echo "APP_ID=${APP_ID}" >> $GITHUB_ENV
+          echo "SOURCE_YAML=${SOURCE_YAML}" >> $GITHUB_ENV
+          echo "TARGET_YAML=${TARGET_YAML}" >> $GITHUB_ENV
+
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Source Template
+        run: |
+          [ -d "${APP_PATH}/charts" ] && rm -rf "${APP_PATH}/charts"
+          [ -f "${APP_PATH}/Chart.lock" ] && rm -f "${APP_PATH}/Chart.lock"
+          helm dependency build "${APP_PATH}"
+          helm template --debug "${APP_PATH}" | tee "${SOURCE_YAML}"
+
+      - name: Validate Source
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: /kubeconform
+          args: >-
+            -summary
+            -output json
+            -schema-location default
+            -schema-location ${{ env.K8S_SCHEMAS_EXTERNAL_SECRET }}
+            ${{ env.SOURCE_YAML }}
+
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: ${{ env.SOURCE_YAML }}
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Download source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+
+      - name: Target Template
+        run: |
+          [ -d "${APP_PATH}/charts" ] && rm -rf "${APP_PATH}/charts"
+          [ -f "${APP_PATH}/Chart.lock" ] && rm -f "${APP_PATH}/Chart.lock"
+          helm dependency build "${APP_PATH}"
+          helm template "${APP_PATH}" | tee "${TARGET_YAML}"
+
+      - name: Validate Target
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: /kubeconform
+          args: >-
+            -summary
+            -output json
+            -schema-location default
+            -schema-location ${{ env.K8S_SCHEMAS_EXTERNAL_SECRET }}
+            ${{ env.TARGET_YAML }}
+
+      - name: Upload target artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TARGET_ARTIFACT }}
+          path: ${{ env.TARGET_YAML }}
+
+      - name: Install difftastic
+        uses: andreswebs/gh-actions/.github/actions/install-difftastic@main
+
+      - name: Diff
+        run: |
+          difft ${SOURCE_YAML} ${TARGET_YAML} | tee ${APP_ID}.diff.txt
+
+      - name: Report
+        uses: andreswebs/gh-actions/.github/actions/file-report@main
+        with:
+          source-txt-file: ${{ env.APP_ID }}.diff.txt
+          environment: ${{ env.CLUSTER }} - ${{ env.CHART_NAME }}

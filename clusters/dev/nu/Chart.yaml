@@ -1,0 +1,12 @@
+---
+apiVersion: v2
+name: nu
+description: nu application
+type: application
+version: 0.0.8
+appVersion: latest
+dependencies:
+  - alias: nu
+    name: app
+    version: 0.0.8
+    repository: oci://public.ecr.aws/andreswebs/charts

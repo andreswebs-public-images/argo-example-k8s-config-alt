@@ -1,0 +1,46 @@
+---
+applicationName: tu
+
+deployment:
+  enabled: true
+  image:
+    repository: public.ecr.aws/andreswebs/argo-example/tu
+    tag: latest
+    pullPolicy: Always
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ template "base.name" . }}'
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 512m
+    requests:
+      memory: 256Mi
+      cpu: 256m
+
+  ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
+
+service:
+  enabled: true
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80

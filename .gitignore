@@ -1,0 +1,7 @@
+.DS_Store
+.envrc
+
+*.bak
+**/Chart.lock
+charts/**/charts
+clusters/**/charts
