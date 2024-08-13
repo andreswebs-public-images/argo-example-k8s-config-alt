@@ -1,19 +1,16 @@
 ---
 applicationName: tu
-
 deployment:
   enabled: true
   image:
     repository: public.ecr.aws/andreswebs/argo-example/tu
-    tag: latest
+    tag: 271990887050e95a648541de1ec342461ad13b95
     pullPolicy: Always
-
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 25%
       maxUnavailable: 25%
-
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -31,12 +28,10 @@ deployment:
     requests:
       memory: 256Mi
       cpu: 256m
-
   ports:
     - containerPort: 80
       name: http
       protocol: TCP
-
 service:
   enabled: true
   ports:
