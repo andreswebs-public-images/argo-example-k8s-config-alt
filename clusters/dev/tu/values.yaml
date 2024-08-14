@@ -4,7 +4,7 @@ deployment:
   enabled: true
   image:
     repository: public.ecr.aws/andreswebs/argo-example/tu
-    tag: 62c817a3d48f5bd08ee9469b7698164b240ca262
+    tag: 7ee6b1be6dad5cceff25b80fafb7d776856e9a3d
     pullPolicy: Always
   strategy:
     type: RollingUpdate
