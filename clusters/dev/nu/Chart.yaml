@@ -4,7 +4,7 @@ name: nu
 description: nu application
 type: application
 version: 0.0.8
-appVersion: 7ee6b1be6dad5cceff25b80fafb7d776856e9a3d
+appVersion: 3f0115f3e19512592c5b4499e2dd6726e039f4d6
 dependencies:
   - alias: nu
     name: app
