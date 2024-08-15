@@ -4,7 +4,7 @@ name: mu
 description: mu application
 type: application
 version: 0.0.8
-appVersion: 7ee6b1be6dad5cceff25b80fafb7d776856e9a3d
+appVersion: 45b24d404a9b2ca7cbf27e7029859dd8e5aa176c
 dependencies:
   - alias: mu
     name: app
